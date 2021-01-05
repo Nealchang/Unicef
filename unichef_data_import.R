@@ -1,289 +1,473 @@
 # package
-library(tidyverse)
-library(data.table)
-library(MASS)
-library(lime)
-library(iml)
-library(caret)
-library(AUC)
-library(xgboost)
-library(car)
-library(caret)
-library(testthat)
-library(gridExtra)
-library(corrplot)
-library(GGally)
-library(mlr)
-library(mlbench)
-
-# functions
-doPlots <- function(data_in, fun, ii, ncol=3) {
-  pp <- list()
-  for (i in ii) {
-    p <- fun(data_in=data_in, i=i)
-    pp <- c(pp, list(p))
-  }
-  do.call("grid.arrange", c(pp, ncol=ncol))
-}
-
-plotCorr <- function(data_in, i){
-  data <- data.frame(x = data_in[[i]], shares = data_in$shares)
-  p <- ggplot(data, aes(x = x, y = shares)) + geom_point(shape = 1, na.rm = TRUE) + geom_smooth(method = lm ) + xlab(paste0(colnames(data_in)[i], '\n', 'Correlation Coefficient: ', round(cor(data_in[[i]], data$shares, use = 'complete.obs'), 2))) + theme_light()
-  return(suppressWarnings(p))
-}
+library(readxl)
+require(tidyverse)
 
 # loading data
-path <- "C:/Users/mark9/Desktop/data collection/OnlineNewsPopularity/"
-data_set <- data.frame(fread(paste0(path,"OnlineNewsPopularity.csv")))
+path <- "C:/Users/mark9/Desktop/4_Seminar Case Studies in DS and MA/unicef_data2021/"
 
-# Part0: Data preparation----
+## AU0710----
+AU0710_Key_Metrics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Key Metrics")
+AU0710_D_Like_Source <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Like Source")
+AU0710_D_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total frequency distri...")
+AU0710_W_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total frequency distr...")
+AU0710_M_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Total frequency dist...")
+AU0710_D_Page_posts_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Page posts frequency d...")
+AU0710_W_Page_posts_freq <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Page posts frequency...")
+AU0710_M_Page_posts_freq <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Page posts frequency...")
+AU0710_D_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Talking About This by...")
+AU0710_W_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Talking About This by...")
+AU0710_M_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Talking About This b...")
+AU0710_D_Page_Stories_By_Story <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Page Stories By Story...")
+AU0710_W_Page_Stories_By_Story <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Page Stories by story...")
+AU0710_D_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Page consumptions by type")
+AU0710_W_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Page consumptions by...")
+AU0710_M_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Page consumptions by...")
+AU0710_Lifetime_Likes_by_Gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Likes by Gender and...")
+AU0710_Lifetime_Likes_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Likes By Country")
+AU0710_Lifetime_Likes_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Likes by City")
+AU0710_Lifetime_Likes_by_Language <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Likes by Language")
+AU0710_W_Reach_Demographics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Reach Demographics")
+AU0710_W_Reach_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Reach by Country")
+AU0710_W_Reach_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Reach by City")
+AU0710_W_Reach_by_Language <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Reach by Language")
+AU0710_D_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Demographics People Ta...")
+AU0710_W_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Demographics People T...")
+AU0710_M_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Demographics People...")
+AU0710_D_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Country People Talking...")
+AU0710_W_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Country People Talkin...")
+AU0710_M_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Country People Talki...")
+AU0710_Daily_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily City People Talking Ab...")
+AU0710_W_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly City People Talking A...")
+AU0710_M_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days City People Talking...")
+AU0710_D_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Language People Talkin...")
+AU0710_W_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Language People Talki...")
+AU0710_M_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Language People Talk...")
+AU0710_D_Loggedin_Tab_Views <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Logged-in Tab Views")
+AU0710_D_External_Referrers <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily External Referrers")
+AU0710_D_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Negative Feedback by Type")
+AU0710_W_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Negative feedback by...")
+AU0710_M_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Negative Feedback by...")
+AU0710_D_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Negative Feedback From...")
+AU0710_W_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Negative Feedback fro...")
+AU0710_M_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Negative Feedback...001")
+AU0710_D_CheckIns_by_Gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Check-Ins by Gender an...")
+AU0710_D_CheckIns_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Check-Ins by Country")
+AU0710_D_CheckIns_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Check-ins by City")
+AU0710_D_CheckIns_by_Locale <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Check-Ins by Locale")
+AU0710_D_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Positive Feedback from...")
+AU0710_W_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Positive Feedback fro...")
+AU0710_M_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Positive Feedback fr...")
+AU0710_D_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Positive Feedback f...001")
+AU0710_W_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Positive Feedback...001")
+AU0710_M_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "28 Days Positive Feedback...001")
+AU0710_D_Liked_and_Online <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Liked and Online")
+AU0710_D_Tot_get_direction_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total get direction cl...")
+AU0710_W_Tot_get_direction_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total get direction c...")
+AU0710_D_Tot_phone_calls_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total phone calls clic...")
+AU0710_W_Tot_phone_calls_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total phone calls cli...")
+AU0710_D_Tot_website_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total website click co...")
+AU0710_W_Tot_website_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total website click c...")
+AU0710_D_Tot_get_direction_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total get direction...001")
+AU0710_W_Tot_get_direction_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total get directio...001")
+AU0710_D_Tot_pheon_call_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total phone calls c...001")
+AU0710_W_Tot_pheon_call_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total phone calls...001")
+AU0710_D_Total_website_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Daily Total web site click c...")
+AU0710_W_Total_website_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Weekly Total web site click...")
 
-## create new column and delete column of no use
-data_set$popular <- ifelse(data_set$shares >= 1500, 1, 0)
-data_set$url <- NULL
-data_set$timedelta <- NULL
+## AU1112----
+AU1112_Key_Metrics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Key Metrics")
+AU1112_D_Like_Source <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Like Source")
+AU1112_D_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total frequency distri...")
+AU1112_W_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total frequency distr...")
+AU1112_M_Tot_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Total frequency dist...")
+AU1112_D_Page_posts_freq_distr <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Page posts frequency d...")
+AU1112_W_Page_posts_freq <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Page posts frequency...")
+AU1112_M_Page_posts_freq <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Page posts frequency...")
+AU1112_D_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Talking About This by...")
+AU1112_W_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Talking About This by...")
+AU1112_M_Talking_Abt_This_by <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Talking About This b...")
+AU1112_D_Page_Stories_By_Story <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Page Stories By Story...")
+AU1112_W_Page_Stories_By_Story <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Page Stories by story...")
+AU1112_D_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Page consumptions by type")
+AU1112_W_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Page consumptions by...")
+AU1112_M_Page_consump_by_type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Page consumptions by...")
+AU1112_Lifetime_Likes_by_Gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Likes by Gender and...")
+AU1112_Lifetime_Likes_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Likes By Country")
+AU1112_Lifetime_Likes_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Likes by City")
+AU1112_Lifetime_Likes_by_Language <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Likes by Language")
+AU1112_W_Reach_Demographics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Reach Demographics")
+AU1112_W_Reach_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Reach by Country")
+AU1112_W_Reach_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Reach by City")
+AU1112_W_Reach_by_Language <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Reach by Language")
+AU1112_D_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Demographics People Ta...")
+AU1112_W_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Demographics People T...")
+AU1112_M_Demographics_People <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Demographics People...")
+AU1112_D_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Country People Talking...")
+AU1112_W_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Country People Talkin...")
+AU1112_M_Country_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Country People Talki...")
+AU1112_Daily_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily City People Talking Ab...")
+AU1112_W_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly City People Talking A...")
+AU1112_M_City_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days City People Talking...")
+AU1112_D_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Language People Talkin...")
+AU1112_W_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Language People Talki...")
+AU1112_M_Language_People_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Language People Talk...")
+AU1112_D_Loggedin_Tab_Views <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Logged-in Tab Views")
+AU1112_D_External_Referrers <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily External Referrers")
+AU1112_D_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Negative Feedback by Type")
+AU1112_W_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Negative feedback by...")
+AU1112_M_Negative_Feedback_by_Type <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Negative Feedback by...")
+AU1112_D_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Negative Feedback From...")
+AU1112_W_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Negative Feedback fro...")
+AU1112_M_Negative_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Negative Feedback...001")
+AU1112_D_CheckIns_by_Gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Check-Ins by Gender an...")
+AU1112_D_CheckIns_by_Country <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Check-Ins by Country")
+AU1112_D_CheckIns_by_City <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Check-ins by City")
+AU1112_D_CheckIns_by_Locale <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Check-Ins by Locale")
+AU1112_D_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Positive Feedback from...")
+AU1112_W_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Positive Feedback fro...")
+AU1112_M_Positive_Feedback <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Positive Feedback fr...")
+AU1112_D_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Positive Feedback f...001")
+AU1112_W_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Positive Feedback...001")
+AU1112_M_Positive_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "28 Days Positive Feedback...001")
+AU1112_D_Liked_and_Online <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Liked and Online")
+AU1112_D_Tot_get_direction_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total get direction cl...")
+AU1112_W_Tot_get_direction_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total get direction c...")
+AU1112_D_Tot_phone_calls_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total phone calls clic...")
+AU1112_W_Tot_phone_calls_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total phone calls cli...")
+AU1112_D_Tot_website_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total website click co...")
+AU1112_W_Tot_website_click <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total website click c...")
+AU1112_D_Tot_get_direction_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total get direction...001")
+AU1112_W_Tot_get_direction_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total get directio...001")
+AU1112_D_Tot_pheon_call_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total phone calls c...001")
+AU1112_W_Tot_pheon_call_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total phone calls...001")
+AU1112_D_Total_website_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Daily Total web site click c...")
+AU1112_W_Total_website_click_age_gender <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Audience) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Weekly Total web site click...")
 
-## data exploration
+## PO0710
+PO0710_Key_Metrics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Key Metrics")
+PO0710_Lifetime_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Talking About This(...")
+PO0710_Lifetime_Post_Stories <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Post Stories by act...")
+PO0710_Lifetime_Post_Consumers <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Post Consumers by type")
+PO0710_Lifetime_Post_Consumptions <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Post Consumptions b...")
+PO0710_Lifetime_Negative_Feedback_tot <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Negative Feedback f...")
+PO0710_Lifetime_Negative_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - July-October2020.xlsx"), 
+             sheet = "Lifetime Negative Feedback")
 
-### structure
-dim(data_set)
-summary(data_set)
+## PO1112
+PO1112_Key_Metrics <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Key Metrics")
+PO1112_Lifetime_Talk <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Talking About This(...")
+PO1112_Lifetime_Post_Stories <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Post Stories by act...")
+PO1112_Lifetime_Post_Consumers <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Post Consumers by type")
+PO1112_Lifetime_Post_Consumptions <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Post Consumptions b...")
+PO1112_Lifetime_Negative_Feedback_tot <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Negative Feedback f...")
+PO1112_Lifetime_Negative_Feedback_uni <- 
+  read_excel(paste0(path,"Facebook Insights Data Export (Post Level) - UNICEF Nederland - November&December2020.xlsx"), 
+             sheet = "Lifetime Negative Feedback")
 
-barplot(table(data_set$shares))
+# QUESTIONNAIRE
+QN_RESPONDENT_CODE <- 
+  read_excel(paste0(path,"QUESTIONNAIRE DATA EUR DEC2020.xlsx"), 
+             sheet = "RESPONDENT CODE")
+QN_REASONS_DONATING <- 
+  read_excel(paste0(path,"QUESTIONNAIRE DATA EUR DEC2020.xlsx"), 
+             sheet = "REASONS FOR DONATING")
+QN_REASONS_AGAINST_DONATING <- 
+  read_excel(paste0(path,"QUESTIONNAIRE DATA EUR DEC2020.xlsx"), 
+             sheet = "REASONS AGAINST DONATING")
+QN_ORGANIZATION_THEME <- 
+  read_excel(paste0(path,"QUESTIONNAIRE DATA EUR DEC2020.xlsx"), 
+             sheet = "ORGANIZATION THEME")
 
-prop.table(table(data_set$popular)) # check balance
-
-### categorical
-data_set[,c(30:36,60)] %>% 
-  rename("mon" = weekday_is_monday, "tue" = weekday_is_tuesday, "wed" = weekday_is_wednesday,
-         "thr" = weekday_is_thursday, "fri" = weekday_is_friday, "sat" = weekday_is_saturday,
-         "sun" = weekday_is_sunday) %>% 
-  gather("day", "Y", -popular) %>% 
-  mutate(day = factor(day, levels = c("mon","tue","wed","thr","fri","sat","sun"))) %>% 
-  filter(Y == 1) %>% 
-  group_by(day, popular) %>% 
-  summarise(cnt = n()) %>% 
-  ungroup() %>% 
-  ggplot(data=., aes(x=factor(day), y = cnt, fill = factor(popular))) + 
-  geom_bar(stat="identity", position=position_dodge())
-  
-### correlation
-for(i in 1:58){
-  if(i %in% c(31:37)){next()}
-  correlations <- cor(data_set[,c(i, 59)])
-  if(correlations[1,2] < -0.2 | correlations[1,2] >= 0.5){
-    doPlots(data_set, fun = plotCorr, ii = i) 
-  } else {cat("no strong correlation\n")}
-}
-
-## stratified sampling
-input_ones <- data_set[which(data_set$popular == 1),]
-input_zero <- data_set[which(data_set$popular == 0), ]
-set.seed(122)
-input_ones_training_row <- sample(1:nrow(input_ones),0.7*nrow(input_ones))
-input_zero_training_row <- sample(1:nrow(input_zero),0.7*nrow(input_zero))
-
-training_ones <- input_ones[input_ones_training_row,]
-training_zero <- input_zero[input_zero_training_row,]
-trainingData <- rbind(training_ones, training_zero)
-
-test_ones <- input_ones[-input_ones_training_row,]
-test_zero <- input_zero[-input_zero_training_row,]
-testData <- rbind(test_ones, test_zero)
-
-dim(trainingData)
-dim(testData)
-
-## convert to matrix
-train.label <- trainingData$popular
-test.label <- testData$popular
-
-trainingData2 <- trainingData # for tuning
-trainingData2$shares <- NULL
-trainingData2$popular <- factor(ifelse(trainingData2$popular == 1, "Y", "N"), levels = c("Y", "N"))
-
-testData2 <- testData # for tuning
-testData2$shares <- NULL
-testData2$popular <- factor(ifelse(testData2$popular == 1, "Y", "N"), levels = c("Y", "N"))
-
-trainingData$popular <- NULL
-trainingData$shares <- NULL
-testData$shares <- NULL
-testData$popular <- NULL
-
-train.data <- as.matrix(trainingData)
-test.data <- as.matrix(testData)
-
-xgb.train <- xgb.DMatrix(data=train.data,label=train.label)
-xgb.test <- xgb.DMatrix(data=test.data,label=test.label)
-
-# GBM Part1: tuning----
-
-
-# XGboost Part1: tuning----
-## tune parameters (mlr)
-set.seed(125)
-
-train.t <- makeClassifTask(data = trainingData2, target = "popular", positive = "Y")
-test.t <- makeClassifTask(data = testData2, target = "popular", positive = "Y")
-
-lrn <- makeLearner("classif.xgboost", nrounds=10)
-
-cv <- makeResampleDesc("CV", iters=5)
-res <- resample(lrn, train.t, cv, acc)
-
-## introduction of hyperparameters
-table_para <- 
-  data.frame(
-    Param = c('eta','gamma','nrounds','max_depth','subsample','colsample_bytree','lambda','alpha'),
-    intro = c('control the learning rate',
-              'maximum depth of a tree',
-              'max number of boosting iterations',
-              'minimum sum of instance weight (hessian) needed in a child',
-              'subsample ratio of the training instance',
-              'subsample ratio of columns when constructing each tree',
-              'regularization term on weights',
-              'regularization term on weights'))
-table_para
-
-## tuning
-ps <- 
-  makeParamSet(
-    makeNumericParam("eta", 0, 0.3), # control the learning rate
-    makeIntegerParam("gamma", 0, 10), # maximum depth of a tree
-    makeIntegerParam("nrounds", 100 ,500), # max number of boosting iterations
-    makeIntegerParam("max_depth", 3, 10), # maximum depth of a tree
-    makeNumericParam("subsample", 0.5, 1), # subsample ratio of the training instance. 
-    makeNumericParam("colsample_bytree", 0.5, 1), # subsample ratio of columns when constructing each tree.
-    makeNumericParam("lambda", 0, 100), # regularization term on weights.
-    makeNumericParam("alpha", 0, 1) # regularization term on weights.
-) 
-tc <- makeTuneControlMBO(budget = 100) # Maximum budget for tuning. This value restricts the number of function evaluations. It is passed to maxExperiments.
-
-set.seed(125)
-
-tr <- tuneParams(learner = lrn, 
-                task = train.t, 
-                resampling = cv5, 
-                measures = acc, 
-                par.set = ps, 
-                control = tc)
-tr$mbo.result$x # optimal parameters
-tr$mbo.result$y # error rate 
-lrn <- setHyperPars(lrn, par.vals = tr$x) # learner
-mdl <- train(lrn, train.t) # model built by training data
-conM2 <- confusionMatrix(xgb.pred.final, test.label)
-
-# XGboost Part2: building model----
-
-## parameters
-params  <-  list(
-  booster="gbtree", 
-  objective="binary:logistic", # specify the learning task and the corresponding learning objective
-  eval_metric="error", # evaluation metrics for validation data.
-  eta=tr$mbo.result$x$eta, 
-  gamma=tr$mbo.result$x$gamma, 
-  nrounds=tr$mbo.result$x$nrounds, 
-  max_depth=tr$mbo.result$x$max_depth, 
-  subsample=tr$mbo.result$x$subsample, 
-  colsample_bytree=tr$mbo.result$x$colsample_bytree, 
-  lambda=tr$mbo.result$x$lambda,
-  alpha=tr$mbo.result$x$alpha
-)
-
-#### save parameters result ##### 
-params  <-  list(
-  booster="gbtree",
-  objective="binary:logistic",
-  eval_metric="error",
-  eta=0.04833973,
-  gamma=2,
-  nrounds=431,
-  max_depth=6,
-  subsample=0.918199,
-  colsample_bytree=0.5484174,
-  lambda=86.44008,
-  alpha=0.3015021
-)
-
-
-## model
-set.seed(123)
-xgb.fit <- 
-  xgb.train(
-    params=params,
-    data=xgb.train,
-    nrounds=10000, # max number of boosting iterations
-    early_stopping_rounds=10,
-    watchlist=list(val1=xgb.train,val2=xgb.test), # named list of xgb.DMatrix datasets to use for evaluating model performance.
-    verbose=0
-  )
-xgb.fit
-
-## Predict outcomes with the test data
-xgb.pred <- predict(xgb.fit, test.data, reshape=T)
-xgb.pred.final <- ifelse(xgb.pred > 0.5,1,0) %>% factor(., levels = c(1, 0))
-test.label <- factor(test.label, levels = c(1, 0))
-
-## evaluation
-conM <- confusionMatrix(xgb.pred.final, test.label)
-conM
-conM$table
-
-plot(roc(xgb.pred,test.label))
-auc(roc(xgb.pred,test.label))
-
-# XGboost Part3: Interpretation----
-## view variable importance plot
-mat <- xgb.importance(feature_names = colnames(train.data), model = xgb.fit)
-
-par(mfrow = c(1,2))
-
-ggplot(mat[1:20], aes(reorder(x = Feature, Gain), y = Gain)) +
-  geom_bar(stat="identity") +
-  geom_line(aes(y = Gain), size = 1.5, color="red", group = 1) +
-  coord_flip() +
-  labs(x="Feature", title = "Top 20 Features")
-
-ggplot(mat[37:56], aes(reorder(x = Feature, -Gain), y = Gain)) +
-  geom_bar(stat="identity") +
-  geom_line(aes(y = Gain), size = 1.5, color="red", group = 1) +
-  coord_flip() +
-  labs(x="Feature", title = "Last 20 Features")
-
-## ALE
-mod_noclass <- Predictor$new(xgb.fit, data = testData2, y = "popular", class = "Y", 
-                             predict.fun=function(object, newdata){
-                               newData_x = xgb.DMatrix(data.matrix(newdata), missing = NA)
-                               results<-predict(object, newData_x)
-                               return(results)
-                             }) # create a new function to make xgboost to be compatible in LIME
-
-par(mfrow = c(2,2))
-
-eff1 <- FeatureEffect$new(mod_noclass,
-                          feature = "kw_avg_avg", 
-                          method = "ale", grid.size = 100)
-eff1$results 
-p_eff1 <- ggplot(eff1$results[1:100,], aes(x = kw_avg_avg, y = `.value`)) + geom_line()
-
-
-eff2 <- FeatureEffect$new(mod_noclass,
-                         feature = "self_reference_min_shares", 
-                         method = "ale", grid.size = 100)
-eff2$results 
-plot(eff2)
-p_eff2 <- ggplot(eff2$results[1:50,], aes(x = self_reference_min_shares, y = `.value`)) + geom_line()
-
-
-eff3 <- FeatureEffect$new(mod_noclass,
-                          feature = "is_weekend", 
-                          method = "ale")
-eff3$results 
-p_eff3 <- plot(eff3)
-
-eff4 <- FeatureEffect$new(mod_noclass,
-                          feature = "data_channel_is_entertainment", 
-                          method = "ale")
-eff4$results 
-p_eff4 <- plot(eff4)
